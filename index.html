@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal — Job Hunt Console</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#0a0f1a;
+  --surface:#111a2b;
+  --surface-2:#17223a;
+  --border:#233150;
+  --text:#e9edf7;
+  --text-muted:#8996b3;
+  --amber:#ffb454;
+  --teal:#4fd1c5;
+  --coral:#ff8a7a;
+  --violet:#b39ddb;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;}
+body{padding-bottom:60px;}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* ---- header ---- */
+.topbar{
+  padding:28px 20px 20px;
+  background:radial-gradient(120% 140% at 10% 0%, #14203a 0%, var(--bg) 60%);
+  border-bottom:1px solid var(--border);
+}
+.brand-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.brand-row .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 12px var(--amber);}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;}
+h1{font-size:26px;font-weight:700;margin-top:4px;}
+.sub{color:var(--text-muted);font-size:13.5px;margin-top:6px;max-width:640px;line-height:1.5;}
+
+.stats{display:flex;gap:10px;overflow-x:auto;margin-top:20px;padding-bottom:4px;}
+.stat{
+  min-width:96px;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:10px 12px;flex-shrink:0;
+}
+.stat .num{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;}
+.stat .lbl{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.stat.high .num{color:var(--teal);}
+.stat.medium .num{color:var(--amber);}
+.stat.stretch .num{color:var(--violet);}
+.stat.applied .num{color:#fff;}
+
+/* ---- goal tracker ---- */
+.goal-card{
+  margin:18px 20px 0;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px;
+}
+.goal-top{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--text-muted);}
+.goal-top strong{color:var(--text);font-family:'JetBrains Mono',monospace;}
+.goal-bar{height:8px;border-radius:6px;background:var(--surface-2);margin-top:8px;overflow:hidden;}
+.goal-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--teal));border-radius:6px;transition:width .3s;}
+.goal-msg{font-size:11.5px;color:var(--text-muted);margin-top:6px;}
+
+/* ---- toolbar ---- */
+.toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 20px 10px;border-bottom:1px solid var(--border);}
+.search{
+  width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);
+  padding:11px 14px;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;
+}
+.search:focus{outline:none;border-color:var(--amber);}
+.filters{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.chip{
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:7px 12px;border-radius:20px;
+  border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;white-space:nowrap;
+}
+.chip.active{border-color:var(--amber);color:var(--amber);background:rgba(255,180,84,.08);}
+.select-row{display:flex;gap:8px;margin-top:10px;}
+select{
+  flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);
+  padding:9px 10px;border-radius:8px;font-size:12.5px;font-family:'Inter',sans-serif;
+}
+
+/* ---- job grid ---- */
+.grid{padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;
+  position:relative;overflow:hidden;
+}
+.card.tier-high{border-left:3px solid var(--teal);}
+.card.tier-medium{border-left:3px solid var(--amber);}
+.card.tier-stretch{border-left:3px solid var(--violet);}
+.card.applied{opacity:.62;}
+.card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.role{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;line-height:1.3;}
+.company{color:var(--text-muted);font-size:12.5px;margin-top:2px;}
+.signal{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
+.bars{display:flex;gap:2px;align-items:flex-end;height:16px;}
+.bars div{width:4px;background:var(--surface-2);border-radius:1px;}
+.bars div.on{background:var(--amber);}
+.score-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);font-weight:700;}
+.meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);}
+.tag.elig-global{color:var(--teal);border-color:rgba(79,209,197,.3);}
+.tag.elig-restricted{color:var(--coral);border-color:rgba(255,138,122,.3);}
+.why{font-size:12.5px;color:var(--text-muted);margin-top:10px;line-height:1.5;}
+.card-actions{display:flex;gap:8px;margin-top:12px;}
+.btn{
+  font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;flex:1;justify-content:center;
+}
+.btn.primary{background:var(--amber);color:#1a1200;border-color:var(--amber);}
+.btn.done{background:var(--teal);color:#04211d;border-color:var(--teal);}
+.notes-toggle{background:none;border:none;color:var(--text-muted);font-size:11.5px;margin-top:8px;cursor:pointer;text-decoration:underline;padding:0;font-family:'Inter',sans-serif;}
+.notes-box{margin-top:8px;}
+textarea{
+  width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:'Inter',sans-serif;resize:vertical;min-height:50px;
+}
+.empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13.5px;}
+
+/* ---- add job ---- */
+.add-card{
+  margin:16px 20px 0;background:var(--surface);border:1px dashed var(--border);border-radius:14px;padding:16px;
+}
+.add-card h3{font-size:14px;}
+.add-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;}
+input[type=text],input[type=url]{
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+  padding:9px 10px;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;width:100%;
+}
+.add-actions{margin-top:10px;}
+
+.footer-actions{display:flex;gap:8px;padding:16px 20px 40px;}
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--teal);color:#04211d;padding:10px 18px;border-radius:20px;
+  font-size:12.5px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:50;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-row"><span class="dot"></span><span class="eyebrow">Signal · Job Hunt Console</span></div>
+  <h1>MrJayVirtual — Application Tracker</h1>
+  <p class="sub">Scored against your full CV: AI Training/Evaluation, automation (Zapier/n8n/Make), graphic design & motion, virtual assistance, growth/social, and AI-assisted web dev. Green = strongest signal, apply first.</p>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="goal-card">
+  <div class="goal-top"><span>This week's applications</span><strong id="goalCount">0 / 5</strong></div>
+  <div class="goal-bar"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
+  <div class="goal-msg" id="goalMsg">5 solid applications a week beats 20 scattered ones. Aim for quality follow-through.</div>
+</div>
+
+<div class="toolbar">
+  <input class="search" id="search" type="text" placeholder="Search role, company, or skill…">
+  <div class="filters" id="tierFilters"></div>
+  <div class="select-row">
+    <select id="categoryFilter"></select>
+    <select id="sortBy">
+      <option value="fit">Sort: Fit score (high→low)</option>
+      <option value="tier">Sort: Tier</option>
+      <option value="company">Sort: Company A–Z</option>
+    </select>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="add-card">
+  <h3>➕ Add a lead you found</h3>
+  <div class="add-grid">
+    <input type="text" id="newRole" placeholder="Role title">
+    <input type="text" id="newCompany" placeholder="Company">
+    <input type="url" id="newLink" placeholder="Application link (https://...)">
+  </div>
+  <div class="add-actions"><button class="btn primary" style="flex:none;" id="addBtn">Add to tracker</button></div>
+</div>
+
+<div class="footer-actions">
+  <button class="btn" id="copyBtn">📋 Copy full list as text</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'jobtracker-state-v1';
+
+const seedJobs = [
+{id:'j1', tier:'high', category:'Automation', role:'Automation Workflow Specialist (GHL · Zapier · n8n · AI)', company:'Human Intelligence', fit:92,
+ elig:'global', eligLabel:'Open globally incl. Nigeria', pay:'$1,000–1,500/mo retainer',
+ why:'Direct match: Zapier/n8n/Make automation is your core stack. Explicitly lists Nigeria as an eligible location.',
+ link:'https://apply.workable.com/humanintelligence/j/D264BCF75C/'},
+
+{id:'j2', tier:'high', category:'Automation', role:'Freelance Automation Developer (Make / Zapier / n8n)', company:'Variacode', fit:88,
+ elig:'global', eligLabel:'Remote / freelance', pay:'Contract',
+ why:'Same tool stack you already run for FMC Academy and Seducia Stores workflows.',
+ link:'https://www.linkedin.com/jobs/view/freelancer-automation-developer-make-zapier-n8n-at-variacode-4238999911'},
+
+{id:'j3', tier:'high', category:'AI Training / Eval', role:'AI Prompt Engineering & Evaluation (paid training)', company:'DataAnnotation.tech', fit:91,
+ elig:'global', eligLabel:'Remote worldwide, flexible hours', pay:'Hourly, FT/PT',
+ why:'"AI Trainer" is your second listed title and AI Content Analysis/QA/LLM Interaction are named competencies on your CV — this is a direct title match, not an adjacent skill.',
+ link:'https://weworkremotely.com/remote-jobs/dataannotation-tech-ft-pt-remote-ai-prompt-engineering-evaluation-will-train'},
+
+{id:'j24', tier:'high', category:'AI Training / Eval', role:'AI Trainer / Model Evaluator (multiple projects)', company:'Outlier AI', fit:88,
+ elig:'global', eligLabel:'Open worldwide, subject-matter tracks available', pay:'$20–40/hr typical',
+ why:'Directly matches your AI Evaluation + Logical Reasoning + Prompt Engineering competencies; creative-writing and general-reasoning tracks fit your background without needing a STEM degree.',
+ link:'https://outlier.ai/'},
+
+{id:'j25', tier:'high', category:'AI Training / Eval', role:'AI Rater / Search & Content Quality Evaluator', company:'TELUS International (AI Community)', fit:84,
+ elig:'global', eligLabel:'Open worldwide, incl. Nigeria', pay:'$14–20/hr typical',
+ why:'One of the few evaluator platforms with broad Africa-region access; your AI Content Analysis and QA skills map onto their rating rubrics directly.',
+ link:'https://www.facebook.com/AICommunitybyTELUSDigital/posts/global-call-we-are-looking-for-freelancers-worldwide-our-new-global-freelancer-d/773269658674166/'},
+
+{id:'j26', tier:'high', category:'Graphic Design', role:'Live board: Social Media Design freelance projects', company:'Upwork', fit:82,
+ elig:'global', eligLabel:'Freelance marketplace', pay:'Project-based',
+ why:'Canva, Photoshop, CapCut, brand identity, and motion graphics are all named on your CV — coaches and course creators post this exact bundle constantly.',
+ link:'https://www.upwork.com/freelance-jobs/social-media-design/'},
+
+{id:'j27', tier:'high', category:'Graphic Design', role:'Live board: Social Media Content Freelancers', company:'Upwork', fit:80,
+ elig:'global', eligLabel:'Freelance marketplace', pay:'Project-based',
+ why:'Same lane as your JayVirtual freelance graphic design work — logos, decks, campaign assets — packaged as a hireable service listing.',
+ link:'https://www.upwork.com/hire/social-media-content-freelancers/'},
+
+{id:'j4', tier:'high', category:'Growth / Social', role:'Social Media Manager', company:'Contra (client posting)', fit:80,
+ elig:'global', eligLabel:'Remote', pay:'Contract',
+ why:'Matches your FMC Academy growth-strategy and JayVrex content work — you already narrate brand voice daily.',
+ link:'https://weworkremotely.com/remote-jobs/contra-social-media-manager-5'},
+
+{id:'j5', tier:'high', category:'Growth / Social', role:'Social Media Manager', company:'Community Phone', fit:78,
+ elig:'global', eligLabel:'Remote', pay:'Contract/FT',
+ why:'Wants someone automating posting with AI tools (Canva AI, Hootsuite) — plays to your automation + content combo.',
+ link:'https://weworkremotely.com/remote-jobs/community-phone-social-media-manager'},
+
+{id:'j6', tier:'high', category:'Virtual Assistant', role:'Virtual Assistant', company:'NoGigiddy', fit:75,
+ elig:'global', eligLabel:'Remote, $18–21/hr', pay:'$18-21/hr',
+ why:'Direct match to your Virtual Assistance certification and mobile-only workflow experience.',
+ link:'https://weworkremotely.com/remote-jobs/nogigiddy-remote-virtual-assistant-18-00-21-00-hour-4'},
+
+{id:'j7', tier:'high', category:'Virtual Assistant', role:'Live board: Virtual Assistant roles', company:'We Work Remotely', fit:80,
+ elig:'global', eligLabel:'Filter by "Anywhere"', pay:'Varies',
+ why:'Continuously updated board — new VA + social-VA roles post daily, several open worldwide.',
+ link:'https://weworkremotely.com/remote-jobs-virtual-assistant'},
+
+{id:'j8', tier:'high', category:'Growth / Social', role:'Live board: Social Media Management roles', company:'We Work Remotely', fit:82,
+ elig:'global', eligLabel:'Filter by "Anywhere"', pay:'Varies',
+ why:'Best hunting ground for coach/course-creator and agency clients wanting a social+automation hybrid.',
+ link:'https://weworkremotely.com/remote-jobs-social-media-management'},
+
+{id:'j9', tier:'high', category:'AI / Prompt', role:'Live board: AI-specific remote roles (LLM, prompt, automation)', company:'RemoteAI.io', fit:83,
+ elig:'global', eligLabel:'Freelance, contract & FT filters', pay:'Varies',
+ why:'Niche board built specifically for AI-automation and prompt-engineering profiles like yours — less noise than generalist boards.',
+ link:'https://remoteai.io/v2/jobs'},
+
+{id:'j10', tier:'medium', category:'AI-Assisted Web Dev', role:'Live board: Next.js freelance projects', company:'Upwork', fit:66,
+ elig:'global', eligLabel:'Freelance marketplace', pay:'Project-based',
+ why:'Your CV lists HTML/CSS/JS fundamentals plus Replit/Cursor/Base44, not deep React/Next.js — good for landing-page and small-site briefs, less so for full app-engineering reqs. Lead with speed + AI-assisted delivery, not framework depth.',
+ link:'https://www.upwork.com/freelance-jobs/next-js/'},
+
+{id:'j11', tier:'stretch', category:'AI-Assisted Web Dev', role:'Live board: Remote Next.js jobs', company:'Working Nomads', fit:48,
+ elig:'global', eligLabel:'Mixed FT/contract', pay:'Varies',
+ why:'Most postings assume production React/Next.js engineering experience your CV doesn\'t currently show — treat as a growth target once you\'ve shipped 1-2 paid Next.js projects.',
+ link:'https://www.workingnomads.com/remote-nextjs-jobs'},
+
+{id:'j12', tier:'stretch', category:'AI-Assisted Web Dev', role:'Live board: Remote React jobs', company:'Working Nomads', fit:46,
+ elig:'global', eligLabel:'Mixed FT/contract', pay:'Varies',
+ why:'Same gap as above — real React roles want component-library and state-management depth beyond "fundamentals."',
+ link:'https://www.workingnomads.com/remote-react-jobs'},
+
+{id:'j13', tier:'stretch', category:'AI-Assisted Web Dev', role:'Vetted freelance/FT Next.js marketplace', company:'Arc.dev', fit:42,
+ elig:'restricted', eligLabel:'Requires technical vetting interview', pay:'Varies',
+ why:'The vetting interview tests production React/Next.js depth — hold off until you have 1-2 more shipped, paid frontend projects to point to.',
+ link:'https://arc.dev/remote-jobs/nextjs'},
+
+{id:'j14', tier:'medium', category:'Automation', role:'Live search: Remote Zapier Automation roles', company:'ZipRecruiter', fit:74,
+ elig:'global', eligLabel:'Filter for worldwide-remote', pay:'$86k–142k (US bands shown)',
+ why:'Some listed roles are US-residency only — filter carefully, but several contract ones are open globally.',
+ link:'https://www.ziprecruiter.com/Jobs/Remote-Zapier-Automation'},
+
+{id:'j15', tier:'medium', category:'Automation', role:'Live search: Remote n8n jobs', company:'Glassdoor', fit:72,
+ elig:'global', eligLabel:'Filter for worldwide-remote', pay:'Varies',
+ why:'n8n is a growing category — new postings weekly, good to check every few days.',
+ link:'https://www.glassdoor.com/Job/remote-n8n-jobs-SRCH_IL.0,6_IS11047_KO7,10.htm'},
+
+{id:'j16', tier:'medium', category:'Virtual Assistant', role:'Live search: Remote Social Media Assistant roles', company:'Indeed', fit:70,
+ elig:'restricted', eligLabel:'Many US-only — check each listing', pay:'Varies',
+ why:'Mixed eligibility — filter for "worldwide" and skip US-resident-only postings.',
+ link:'https://www.indeed.com/q-remote-social-media-assistant-jobs.html'},
+
+{id:'j17', tier:'medium', category:'Virtual Assistant', role:'Screened remote social/VA roles', company:'Virtual Vocations', fit:71,
+ elig:'restricted', eligLabel:'Mixed — many US/Canada based', pay:'Varies',
+ why:'Every listing pre-screened for legitimacy, which is worth the extra filtering effort.',
+ link:'https://www.virtualvocations.com/q-remote-social-media-assistant-jobs.html'},
+
+{id:'j18', tier:'medium', category:'AI / Prompt', role:'Live search: Remote AI Prompt Engineer roles', company:'ZipRecruiter', fit:65,
+ elig:'restricted', eligLabel:'Mixed — check each listing', pay:'$43–62/hr typical',
+ why:'Entry-friendly prompt roles mixed in with senior LLM-engineer reqs — cherry-pick the junior/contract ones.',
+ link:'https://www.ziprecruiter.com/Jobs/Remote-Ai-Prompt-Engineer'},
+
+{id:'j19', tier:'stretch', category:'AI-Assisted Web Dev', role:'Live board: Remote Next.js jobs', company:'reactjobs.io', fit:47,
+ elig:'global', eligLabel:'Mixed FT/contract', pay:'Varies',
+ why:'Smaller, dev-focused board with less competition, but the roles still assume production-level React — same growth-target logic as the other frontend stretch entries.',
+ link:'https://reactjobs.io/jobs/nextjs/remote'},
+
+{id:'j28', tier:'medium', category:'Graphic Design', role:'AI Trainer for Visual/Design work (Digital Artist, Illustrator, Graphic Designer tracks)', company:'Handshake AI', fit:76,
+ elig:'global', eligLabel:'Remote, multiple design-specific tracks', pay:'Varies by track',
+ why:'A rare hybrid that matches you on both axes at once: AI Trainer title + real graphic design/motion graphics background, rather than picking one or the other.',
+ link:'https://www.indeed.com/q-graphic-design-social-media-remote-work-from-home-jobs.html'},
+
+{id:'j20', tier:'stretch', category:'AI / Prompt', role:'Live search: AI Prompt Engineer roles (senior/production)', company:'Glassdoor', fit:55,
+ elig:'restricted', eligLabel:'Often wants CS degree + prod ML exp', pay:'$130k–290k reported',
+ why:'Stretch because most postings want production LLM-eval experience — but worth applying to junior-tagged ones with Verity as proof of work.',
+ link:'https://www.glassdoor.com/Job/ai-prompt-engineer-jobs-SRCH_IS12563_KO0,18.htm'},
+
+{id:'j21', tier:'stretch', category:'AI / Prompt', role:'Live search: AI Prompt Engineer roles', company:'Indeed', fit:52,
+ elig:'restricted', eligLabel:'Many enterprise/production roles', pay:'Varies',
+ why:'High bar (RAG, agentic system design) but a few LLM-app / associate-level roles are reachable with a strong portfolio pitch.',
+ link:'https://www.indeed.com/q-ai-prompt-engineer-remote-jobs.html'},
+
+{id:'j22', tier:'stretch', category:'AI / Prompt', role:'Live search: Contract AI Prompt Engineer roles ($43–138/hr)', company:'ZipRecruiter', fit:58,
+ elig:'restricted', eligLabel:'Wide pay range — junior end is reachable', pay:'$43–138/hr',
+ why:'The lower end of this range is realistic for you now; the top end is the stretch goal to grow into.',
+ link:'https://www.ziprecruiter.com/Jobs/Remote-Ai-Prompt-Engineer-Contract'},
+
+{id:'j23', tier:'stretch', category:'AI-Assisted Web Dev', role:'Vetted developer network (apply to join talent pool)', company:'Lemon.io', fit:38,
+ elig:'restricted', eligLabel:'Vetting process required', pay:'Market rate, matched to funded startups',
+ why:'Pays well above open-board rates, but the vetting bar is production React/Next.js engineering — a longer-term goal once your frontend portfolio has 2+ more paid, shipped projects.',
+ link:'https://lemon.io/hire/next-js-developers/'},
+];
+
+// ---------- storage helpers ----------
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {applied:{}, notes:{}, custom:[], appliedDates:{}};
+  }catch(e){ return {applied:{}, notes:{}, custom:[], appliedDates:{}}; }
+}
+function saveState(state){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+let state = loadState();
+let allJobs = [...seedJobs, ...state.custom];
+let activeTier = 'all';
+let activeCategory = 'all';
+let searchTerm = '';
+let sortMode = 'fit';
+
+function tierLabel(t){ return t==='high' ? 'High probability' : t==='medium' ? 'Medium probability' : 'Stretch'; }
+
+function renderStats(){
+  const total = allJobs.length;
+  const high = allJobs.filter(j=>j.tier==='high').length;
+  const medium = allJobs.filter(j=>j.tier==='medium').length;
+  const stretch = allJobs.filter(j=>j.tier==='stretch').length;
+  const applied = Object.values(state.applied).filter(Boolean).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Total roles</div></div>
+    <div class="stat high"><div class="num">${high}</div><div class="lbl">High</div></div>
+    <div class="stat medium"><div class="num">${medium}</div><div class="lbl">Medium</div></div>
+    <div class="stat stretch"><div class="num">${stretch}</div><div class="lbl">Stretch</div></div>
+    <div class="stat applied"><div class="num">${applied}</div><div class="lbl">Applied</div></div>
+  `;
+}
+
+function renderGoal(){
+  const now = new Date();
+  const weekKey = getWeekKey(now);
+  const count = Object.entries(state.appliedDates).filter(([id,d])=> getWeekKey(new Date(d))===weekKey).length;
+  const pct = Math.min(100, Math.round((count/5)*100));
+  document.getElementById('goalCount').textContent = `${count} / 5`;
+  document.getElementById('goalFill').style.width = pct+'%';
+  const msg = document.getElementById('goalMsg');
+  if(count>=5){ msg.textContent = "Goal hit for this week — momentum compounds, keep going if you have energy."; }
+  else if(count>0){ msg.textContent = `${5-count} more to hit this week's goal. Pick from the High tier first.`; }
+  else { msg.textContent = "5 solid applications a week beats 20 scattered ones. Start with a High-probability role."; }
+}
+
+function getWeekKey(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day;
+  const monday = new Date(date.setDate(diff));
+  return monday.toISOString().slice(0,10);
+}
+
+function renderFilters(){
+  const tiers = [['all','All'],['high','High'],['medium','Medium'],['stretch','Stretch']];
+  document.getElementById('tierFilters').innerHTML = tiers.map(([val,label])=>
+    `<button class="chip ${activeTier===val?'active':''}" data-tier="${val}">${label}</button>`
+  ).join('');
+  document.querySelectorAll('.chip').forEach(btn=>{
+    btn.onclick = ()=>{ activeTier = btn.dataset.tier; renderFilters(); renderGrid(); };
+  });
+
+  const cats = ['all', ...new Set(allJobs.map(j=>j.category))];
+  const catSelect = document.getElementById('categoryFilter');
+  catSelect.innerHTML = cats.map(c=>`<option value="${c}">${c==='all'?'All categories':c}</option>`).join('');
+  catSelect.value = activeCategory;
+  catSelect.onchange = ()=>{ activeCategory = catSelect.value; renderGrid(); };
+}
+
+function signalBars(fit){
+  const level = Math.round(fit/20); // 0-5
+  let html = '<div class="bars">';
+  for(let i=1;i<=5;i++){
+    const h = 4 + i*2.4;
+    html += `<div style="height:${h}px" class="${i<=level?'on':''}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderGrid(){
+  let jobs = [...allJobs];
+  if(activeTier!=='all') jobs = jobs.filter(j=>j.tier===activeTier);
+  if(activeCategory!=='all') jobs = jobs.filter(j=>j.category===activeCategory);
+  if(searchTerm.trim()){
+    const s = searchTerm.toLowerCase();
+    jobs = jobs.filter(j=> (j.role+j.company+j.category).toLowerCase().includes(s));
+  }
+  if(sortMode==='fit') jobs.sort((a,b)=>b.fit-a.fit);
+  if(sortMode==='tier') { const order={high:0,medium:1,stretch:2}; jobs.sort((a,b)=>order[a.tier]-order[b.tier]); }
+  if(sortMode==='company') jobs.sort((a,b)=>a.company.localeCompare(b.company));
+
+  const grid = document.getElementById('grid');
+  if(jobs.length===0){
+    grid.innerHTML = '<div class="empty">No roles match that search — try clearing filters.</div>';
+    return;
+  }
+
+  grid.innerHTML = jobs.map(j=>{
+    const applied = !!state.applied[j.id];
+    const note = state.notes[j.id] || '';
+    return `
+    <div class="card tier-${j.tier} ${applied?'applied':''}">
+      <div class="card-top">
+        <div>
+          <div class="role">${j.role}</div>
+          <div class="company">${j.company} · ${j.eligLabel}</div>
+        </div>
+        <div class="signal">
+          ${signalBars(j.fit)}
+          <div class="score-num">${j.fit}</div>
+        </div>
+      </div>
+      <div class="meta-row">
+        <span class="tag">${tierLabel(j.tier)}</span>
+        <span class="tag">${j.category}</span>
+        <span class="tag ${j.elig==='global'?'elig-global':'elig-restricted'}">${j.elig==='global'?'Nigeria-eligible':'Check eligibility'}</span>
+        <span class="tag">${j.pay}</span>
+      </div>
+      <div class="why">${j.why}</div>
+      <div class="card-actions">
+        <a class="btn primary" href="${j.link}" target="_blank" rel="noopener">Apply →</a>
+        <button class="btn ${applied?'done':''}" data-toggle="${j.id}">${applied?'✓ Applied':'Mark applied'}</button>
+      </div>
+      <button class="notes-toggle" data-notes="${j.id}">${note ? 'Edit note' : '+ add note'}</button>
+      <div class="notes-box" style="display:${note?'block':'none'}" data-notesbox="${j.id}">
+        <textarea placeholder="e.g. follow up Friday, contact name...">${note}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.toggle;
+      const wasApplied = !!state.applied[id];
+      state.applied[id] = !wasApplied;
+      if(!wasApplied){ state.appliedDates[id] = new Date().toISOString(); showToast('Marked as applied ✓'); }
+      else { delete state.appliedDates[id]; }
+      saveState(state);
+      renderStats(); renderGoal(); renderGrid();
+    };
+  });
+  document.querySelectorAll('[data-notes]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.notes;
+      const box = document.querySelector(`[data-notesbox="${id}"]`);
+      box.style.display = box.style.display==='none' ? 'block' : 'none';
+      const ta = box.querySelector('textarea');
+      ta.onblur = ()=>{ state.notes[id]=ta.value; saveState(state); };
+    };
+  });
+}
+
+document.getElementById('search').addEventListener('input', e=>{ searchTerm = e.target.value; renderGrid(); });
+document.getElementById('sortBy').addEventListener('change', e=>{ sortMode = e.target.value; renderGrid(); });
+
+document.getElementById('addBtn').onclick = ()=>{
+  const role = document.getElementById('newRole').value.trim();
+  const company = document.getElementById('newCompany').value.trim();
+  const link = document.getElementById('newLink').value.trim();
+  if(!role || !company || !link){ showToast('Fill in role, company, and link'); return; }
+  const job = {
+    id: 'custom-'+Date.now(), tier:'medium', category:'Custom', role, company, fit:70,
+    elig:'global', eligLabel:'Your own lead', pay:'—',
+    why:'Added by you — review and adjust the fit score mentally as you learn more.',
+    link: link.startsWith('http') ? link : 'https://'+link
+  };
+  state.custom.push(job);
+  allJobs = [...seedJobs, ...state.custom];
+  saveState(state);
+  document.getElementById('newRole').value='';
+  document.getElementById('newCompany').value='';
+  document.getElementById('newLink').value='';
+  renderFilters(); renderStats(); renderGrid();
+  showToast('Added to your tracker');
+};
+
+document.getElementById('copyBtn').onclick = ()=>{
+  const lines = allJobs.map(j=>{
+    const applied = state.applied[j.id] ? '[APPLIED] ' : '';
+    return `${applied}${j.role} — ${j.company} (Fit ${j.fit}, ${tierLabel(j.tier)})\n${j.link}`;
+  });
+  const text = lines.join('\n\n');
+  navigator.clipboard.writeText(text).then(()=> showToast('Copied full list to clipboard'));
+};
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+renderStats();
+renderGoal();
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>
